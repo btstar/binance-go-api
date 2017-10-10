@@ -1,2 +1,2 @@
 # binance-api
-goland wrapper for binance-api
+golang wrapper for binance-api
