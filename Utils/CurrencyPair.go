@@ -31,13 +31,12 @@ var (
 	ETC     = Currency{"ETC", ""}
 
 	//currency pair
-
-	BTC_USD = CurrencyPair{BTC, USD}
-	LTC_USD = CurrencyPair{LTC, USD}
-	ETH_USD = CurrencyPair{ETH, USD}
-	ETC_USD = CurrencyPair{ETC, USD}
-	BCH_USD = CurrencyPair{BCH, USD}
-	BCC_USD = CurrencyPair{BCC, USD}
+	BTC_USDT = CurrencyPair{BTC, USDT}
+	LTC_USDT = CurrencyPair{LTC, USDT}
+	ETH_USDT = CurrencyPair{ETH, USDT}
+	ETC_USDT = CurrencyPair{ETC, USDT}
+	BCH_USDT = CurrencyPair{BCH, USDT}
+	BCC_USDT = CurrencyPair{BCC, USDT}
 
 	LTC_BTC = CurrencyPair{LTC, BTC}
 	ETH_BTC = CurrencyPair{ETH, BTC}
@@ -47,6 +46,9 @@ var (
 
 	ETC_ETH      = CurrencyPair{ETC, ETH}
 	UNKNOWN_PAIR = CurrencyPair{UNKNOWN, UNKNOWN}
+
+	CurrencyArray     = []Currency{CNY, USD, USDT, EUR, BTC, BCC, BCH, LTC, ETH, ETC}
+	CurrencyPairArray = []CurrencyPair{BTC_USDT, LTC_USDT, ETH_USDT, ETC_USDT, BCH_USDT, BCC_USDT, LTC_BTC, ETH_BTC, ETC_BTC, BCC_BTC, BCH_BTC, ETC_ETH}
 )
 
 func (c CurrencyPair) String() string {

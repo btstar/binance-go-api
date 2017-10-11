@@ -117,7 +117,7 @@ func (ba *Binance) GetDepth(size int, currencyPair CurrencyPair) (*Depth, error)
 }
 
 func (ba *Binance) placeOrder(amount, price string, pair CurrencyPair, orderType, orderSide string) (*Order, error) {
-	path := API_V3 + PLACE_ORDER_API + "/test"
+	path := API_V3 + PLACE_ORDER_API
 	params := url.Values{}
 	params.Set("symbol", pair.ToSymbol(""))
 	params.Set("side", orderSide)
@@ -170,8 +170,35 @@ func (ba *Binance) placeOrder(amount, price string, pair CurrencyPair, orderType
 }
 
 func (ba *Binance) GetAccount() (*Account, error) {
-	panic("No implement")
-	return nil, nil
+	path := API_V3 + ACCOUNT_URI
+
+	params := url.Values{}
+	ba.buildPostForm(&params)
+	respmap, err := HttpGet2(ba.httpClient, path, params, map[string]string{"X-MBX-APIKEY": ba.accessKey})
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	//log.Println(string(resp))
+
+	acc := Account{}
+	acc.Exchange = ba.GetExchangeName()
+	acc.SubAccounts = make(map[Currency]SubAccount)
+
+	balances := respmap["balances"].([]interface{})
+	for _, v := range balances {
+		log.Println(v)
+		vv := v.(map[string]interface{})
+		currency := NewCurrency(vv["asset"].(string), "")
+		acc.SubAccounts[currency] = SubAccount{
+			Currency:     currency,
+			Amount:       ToFloat64(vv["free"]),
+			ForzenAmount: ToFloat64(vv["locked"]),
+			LoanAmount:   0,
+		}
+	}
+
+	return &acc, nil
 }
 
 func (ba *Binance) LimitBuy(amount, price string, currencyPair CurrencyPair) (*Order, error) {
