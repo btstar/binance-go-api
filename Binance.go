@@ -194,7 +194,6 @@ func (ba *Binance) GetAccount() (*Account, error) {
 			Currency:     currency,
 			Amount:       ToFloat64(vv["free"]),
 			ForzenAmount: ToFloat64(vv["locked"]),
-			LoanAmount:   0,
 		}
 	}
 

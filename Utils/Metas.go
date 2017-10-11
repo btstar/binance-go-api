@@ -26,8 +26,7 @@ type Trade struct {
 type SubAccount struct {
 	Currency Currency
 	Amount,//available
-	ForzenAmount,//forzen
-	LoanAmount float64
+	ForzenAmount float64//forzen
 }
 
 type Account struct {
