@@ -3,8 +3,6 @@ package utils
 //http request utility
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -29,9 +27,9 @@ func httpRequest(client *http.Client, reqType string, reqUrl string, postData st
 
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("HttpStatusCode:%d ,Desc:%s", resp.StatusCode, resp.Status))
-	}
+	//if resp.StatusCode != 200 {
+	//	return nil, errors.New(fmt.Sprintf("HttpStatusCode:%d ,Desc:%s", resp.StatusCode, resp.Status))
+	//}
 
 	bodyData, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -56,12 +54,12 @@ func HttpGet(client *http.Client, reqUrl string) (map[string]interface{}, error)
 	return bodyDataMap, nil
 }
 
-func HttpGet2(client *http.Client, reqUrl string, postData url.Values, headers map[string]string) (map[string]interface{}, error) {
+func HttpGet2(client *http.Client, reqUrl string, headers map[string]string) (map[string]interface{}, error) {
 	if headers == nil {
 		headers = map[string]string{}
 	}
 	headers["Content-Type"] = "application/x-www-form-urlencoded"
-	respData, err := httpRequest(client, "GET", reqUrl, postData.Encode(), headers)
+	respData, err := httpRequest(client, "GET", reqUrl, "", headers)
 	if err != nil {
 		return nil, err
 	}
@@ -69,12 +67,29 @@ func HttpGet2(client *http.Client, reqUrl string, postData url.Values, headers m
 	var bodyDataMap map[string]interface{}
 	err = json.Unmarshal(respData, &bodyDataMap)
 	if err != nil {
-		log.Println(string(respData))
+		log.Println("respData", string(respData))
 		return nil, err
 	}
 	return bodyDataMap, nil
 }
+func HttpGet3(client *http.Client, reqUrl string, headers map[string]string) ([]interface{}, error) {
+	if headers == nil {
+		headers = map[string]string{}
+	}
+	headers["Content-Type"] = "application/x-www-form-urlencoded"
+	respData, err := httpRequest(client, "GET", reqUrl, "", headers)
+	if err != nil {
+		return nil, err
+	}
 
+	var bodyDataMap []interface{}
+	err = json.Unmarshal(respData, &bodyDataMap)
+	if err != nil {
+		log.Println("respData", string(respData))
+		return nil, err
+	}
+	return bodyDataMap, nil
+}
 func HttpPostForm(client *http.Client, reqUrl string, postData url.Values) ([]byte, error) {
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded"}
 	return httpRequest(client, "POST", reqUrl, postData.Encode(), headers)

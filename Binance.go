@@ -21,9 +21,9 @@ const (
 
 	TICKER_URI             = "ticker/24hr?symbol=%s"
 	DEPTH_URI              = "depth?symbol=%s&limit=%d"
-	ACCOUNT_URI            = "account"
-	PLACE_ORDER_API        = "order"
-	UNFINISHED_ORDERS_INFO = "openOrders"
+	ACCOUNT_URI            = "account?"
+	ORDER_URI              = "order?"
+	UNFINISHED_ORDERS_INFO = "openOrders?"
 )
 
 type Binance struct {
@@ -32,12 +32,12 @@ type Binance struct {
 	httpClient *http.Client
 }
 
-func (ba *Binance) buildPostForm(postForm *url.Values) error {
+func (bn *Binance) buildParamsSigned(postForm *url.Values) error {
 	postForm.Set("recvWindow", "6000000")
 	tonce := strconv.FormatInt(time.Now().UnixNano(), 10)[0:13]
 	postForm.Set("timestamp", tonce)
 	payload := postForm.Encode()
-	sign, _ := GetParamHmacSHA256Sign(ba.secretKey, payload)
+	sign, _ := GetParamHmacSHA256Sign(bn.secretKey, payload)
 	postForm.Set("signature", sign)
 	return nil
 }
@@ -46,13 +46,13 @@ func New(client *http.Client, api_key, secret_key string) *Binance {
 	return &Binance{api_key, secret_key, client}
 }
 
-func (ba *Binance) GetExchangeName() string {
+func (bn *Binance) GetExchangeName() string {
 	return EXCHANGE_NAME
 }
 
-func (ba *Binance) GetTicker(currency CurrencyPair) (*Ticker, error) {
+func (bn *Binance) GetTicker(currency CurrencyPair) (*Ticker, error) {
 	tickerUri := API_V1 + fmt.Sprintf(TICKER_URI, currency.ToSymbol(""))
-	bodyDataMap, err := HttpGet(ba.httpClient, tickerUri)
+	bodyDataMap, err := HttpGet(bn.httpClient, tickerUri)
 
 	if err != nil {
 		log.Println("GetTicker error:", err)
@@ -71,15 +71,15 @@ func (ba *Binance) GetTicker(currency CurrencyPair) (*Ticker, error) {
 	return &ticker, nil
 }
 
-func (ba *Binance) GetDepth(size int, currencyPair CurrencyPair) (*Depth, error) {
+func (bn *Binance) GetDepth(size int, currencyPair CurrencyPair) (*Depth, error) {
 	if size > 100 {
 		size = 100
-	} else if size < 0 {
-		size = 0
+	} else if size < 5 {
+		size = 5
 	}
 
 	apiUrl := fmt.Sprintf(API_V1+DEPTH_URI, currencyPair.ToSymbol(""), size)
-	resp, err := HttpGet(ba.httpClient, apiUrl)
+	resp, err := HttpGet(bn.httpClient, apiUrl)
 	if err != nil {
 		log.Println("GetDepth error:", err)
 		return nil, err
@@ -116,8 +116,8 @@ func (ba *Binance) GetDepth(size int, currencyPair CurrencyPair) (*Depth, error)
 	return depth, nil
 }
 
-func (ba *Binance) placeOrder(amount, price string, pair CurrencyPair, orderType, orderSide string) (*Order, error) {
-	path := API_V3 + PLACE_ORDER_API
+func (bn *Binance) placeOrder(amount, price string, pair CurrencyPair, orderType, orderSide string) (*Order, error) {
+	path := API_V3 + ORDER_URI
 	params := url.Values{}
 	params.Set("symbol", pair.ToSymbol(""))
 	params.Set("side", orderSide)
@@ -132,10 +132,10 @@ func (ba *Binance) placeOrder(amount, price string, pair CurrencyPair, orderType
 		params.Set("price", price)
 	}
 
-	ba.buildPostForm(&params)
+	bn.buildParamsSigned(&params)
 
-	resp, err := HttpPostForm2(ba.httpClient, path, params,
-		map[string]string{"X-MBX-APIKEY": ba.accessKey})
+	resp, err := HttpPostForm2(bn.httpClient, path, params,
+		map[string]string{"X-MBX-APIKEY": bn.accessKey})
 	//log.Println("resp:", string(resp), "err:", err)
 	if err != nil {
 		return nil, err
@@ -146,6 +146,9 @@ func (ba *Binance) placeOrder(amount, price string, pair CurrencyPair, orderType
 	if err != nil {
 		log.Println(string(resp))
 		return nil, err
+	}
+	if _, isok := respmap["code"]; isok == true {
+		return nil, errors.New(respmap["msg"].(string))
 	}
 
 	orderId, isok := respmap["orderId"].(string)
@@ -169,25 +172,26 @@ func (ba *Binance) placeOrder(amount, price string, pair CurrencyPair, orderType
 		OrderTime:  int(time.Now().Unix())}, nil
 }
 
-func (ba *Binance) GetAccount() (*Account, error) {
-	path := API_V3 + ACCOUNT_URI
-
+func (bn *Binance) GetAccount() (*Account, error) {
 	params := url.Values{}
-	ba.buildPostForm(&params)
-	respmap, err := HttpGet2(ba.httpClient, path, params, map[string]string{"X-MBX-APIKEY": ba.accessKey})
+	bn.buildParamsSigned(&params)
+	path := API_V3 + ACCOUNT_URI + params.Encode()
+	respmap, err := HttpGet2(bn.httpClient, path, map[string]string{"X-MBX-APIKEY": bn.accessKey})
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	//log.Println(string(resp))
-
+	//log.Println("respmap:", respmap)
+	if _, isok := respmap["code"]; isok == true {
+		return nil, errors.New(respmap["msg"].(string))
+	}
 	acc := Account{}
-	acc.Exchange = ba.GetExchangeName()
+	acc.Exchange = bn.GetExchangeName()
 	acc.SubAccounts = make(map[Currency]SubAccount)
 
 	balances := respmap["balances"].([]interface{})
 	for _, v := range balances {
-		log.Println(v)
+		//log.Println(v)
 		vv := v.(map[string]interface{})
 		currency := NewCurrency(vv["asset"].(string), "")
 		acc.SubAccounts[currency] = SubAccount{
@@ -200,32 +204,31 @@ func (ba *Binance) GetAccount() (*Account, error) {
 	return &acc, nil
 }
 
-func (ba *Binance) LimitBuy(amount, price string, currencyPair CurrencyPair) (*Order, error) {
-	return ba.placeOrder(amount, price, currencyPair, "LIMIT", "BUY")
+func (bn *Binance) LimitBuy(amount, price string, currencyPair CurrencyPair) (*Order, error) {
+	return bn.placeOrder(amount, price, currencyPair, "LIMIT", "BUY")
 }
 
-func (ba *Binance) LimitSell(amount, price string, currencyPair CurrencyPair) (*Order, error) {
-	return ba.placeOrder(amount, price, currencyPair, "LIMIT", "SELL")
+func (bn *Binance) LimitSell(amount, price string, currencyPair CurrencyPair) (*Order, error) {
+	return bn.placeOrder(amount, price, currencyPair, "LIMIT", "SELL")
 }
 
-func (ba *Binance) MarketBuy(amount, price string, currencyPair CurrencyPair) (*Order, error) {
-	return ba.placeOrder(amount, price, currencyPair, "MARKET", "BUY")
+func (bn *Binance) MarketBuy(amount, price string, currencyPair CurrencyPair) (*Order, error) {
+	return bn.placeOrder(amount, price, currencyPair, "MARKET", "BUY")
 }
 
-func (ba *Binance) MarketSell(amount, price string, currencyPair CurrencyPair) (*Order, error) {
-	return ba.placeOrder(amount, price, currencyPair, "MARKET", "SELL")
+func (bn *Binance) MarketSell(amount, price string, currencyPair CurrencyPair) (*Order, error) {
+	return bn.placeOrder(amount, price, currencyPair, "MARKET", "SELL")
 }
 
-func (ba *Binance) CancelOrder(orderId string, currencyPair CurrencyPair) (bool, error) {
-	path := API_V3 + PLACE_ORDER_API
+func (bn *Binance) CancelOrder(orderId string, currencyPair CurrencyPair) (bool, error) {
+	path := API_V3 + ORDER_URI
 	params := url.Values{}
 	params.Set("symbol", currencyPair.ToSymbol(""))
-
 	params.Set("orderId", orderId)
 
-	ba.buildPostForm(&params)
+	bn.buildParamsSigned(&params)
 
-	resp, err := HttpDeleteForm(ba.httpClient, path, params, map[string]string{"X-MBX-APIKEY": ba.accessKey})
+	resp, err := HttpDeleteForm(bn.httpClient, path, params, map[string]string{"X-MBX-APIKEY": bn.accessKey})
 
 	//log.Println("resp:", string(resp), "err:", err)
 	if err != nil {
@@ -250,16 +253,15 @@ func (ba *Binance) CancelOrder(orderId string, currencyPair CurrencyPair) (bool,
 	return true, nil
 }
 
-func (ba *Binance) GetOneOrder(orderId string, currencyPair CurrencyPair) (*Order, error) {
-	path := API_V3 + PLACE_ORDER_API
+func (bn *Binance) GetOneOrder(orderId string, currencyPair CurrencyPair) (*Order, error) {
 	params := url.Values{}
 	params.Set("symbol", currencyPair.ToSymbol(""))
 	params.Set("orderId", orderId)
 
-	ba.buildPostForm(&params)
+	bn.buildParamsSigned(&params)
+	path := API_V3 + ORDER_URI + params.Encode()
 
-	respmap, err := HttpGet2(ba.httpClient, path, params,
-		map[string]string{"X-MBX-APIKEY": ba.accessKey})
+	respmap, err := HttpGet2(bn.httpClient, path, map[string]string{"X-MBX-APIKEY": bn.accessKey})
 
 	if err != nil {
 		return nil, err
@@ -281,16 +283,15 @@ func (ba *Binance) GetOneOrder(orderId string, currencyPair CurrencyPair) (*Orde
 	return &ord, nil
 }
 
-func (ba *Binance) GetUnfinishOrders(currencyPair CurrencyPair) ([]Order, error) {
-	path := API_V3 + UNFINISHED_ORDERS_INFO
+func (bn *Binance) GetUnfinishOrders(currencyPair CurrencyPair) ([]Order, error) {
 	params := url.Values{}
 	params.Set("symbol", currencyPair.ToSymbol(""))
 
-	ba.buildPostForm(&params)
+	bn.buildParamsSigned(&params)
+	path := API_V3 + UNFINISHED_ORDERS_INFO + params.Encode()
 
-	respmap, err := HttpGet2(ba.httpClient, path, params,
-		map[string]string{"X-MBX-APIKEY": ba.accessKey})
-
+	respmap, err := HttpGet3(bn.httpClient, path, map[string]string{"X-MBX-APIKEY": bn.accessKey})
+	//log.Println("respmap", respmap, "err", err)
 	if err != nil {
 		return nil, err
 	}
