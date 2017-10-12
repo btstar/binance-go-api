@@ -30,7 +30,13 @@ func TestBinance_GetAccount(t *testing.T) {
 	account, err := ba.GetAccount()
 	t.Log(account, err)
 }
+
 func TestBinance_GetUnfinishOrders(t *testing.T) {
 	orders, err := ba.GetUnfinishOrders(utils.ETH_BTC)
 	t.Log(orders, err)
+}
+
+func TestBinance_GetTickers(t *testing.T) {
+	tickers, err := ba.GetTickers()
+	t.Log(tickers, err)
 }

@@ -20,6 +20,7 @@ const (
 	API_V3       = API_BASE_URL + "api/v3/"
 
 	TICKER_URI             = "ticker/24hr?symbol=%s"
+	TICKERS_URI             = "ticker/allBookTickers"
 	DEPTH_URI              = "depth?symbol=%s&limit=%d"
 	ACCOUNT_URI            = "account?"
 	ORDER_URI              = "order?"
@@ -69,6 +70,31 @@ func (bn *Binance) GetTicker(currency CurrencyPair) (*Ticker, error) {
 	ticker.High, _ = strconv.ParseFloat(tickerMap["highPrice"].(string), 10)
 	ticker.Vol, _ = strconv.ParseFloat(tickerMap["volume"].(string), 10)
 	return &ticker, nil
+}
+
+func (bn *Binance) GetTickers() (*[]Tickers, error) {
+	tickerUri := API_V1 + TICKERS_URI
+	bodyDataMap, err := HttpGet3(bn.httpClient, tickerUri, nil)
+
+	if err != nil {
+		log.Println("GetTickers error:", err)
+		return nil, err
+	}
+
+	var tickers = make([]Tickers, 0)
+	tonce := uint64(time.Now().Unix())
+	for _, v := range bodyDataMap {
+		tickerMap := v.(map[string]interface{})
+		ticker := new(Tickers)
+		ticker.Date = tonce
+		ticker.Buy = ToFloat64(tickerMap["bidPrice"])
+		ticker.BuyQty = ToFloat64(tickerMap["bidQty"])
+		ticker.Sell = ToFloat64(tickerMap["askPrice"])
+		ticker.SellQty = ToFloat64(tickerMap["askQty"])
+		ticker.Currency = tickerMap["symbol"].(string)
+		tickers = append(tickers, *ticker)
+	}
+	return &tickers, nil
 }
 
 func (bn *Binance) GetDepth(size int, currencyPair CurrencyPair) (*Depth, error) {

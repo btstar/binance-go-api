@@ -25,8 +25,8 @@ type Trade struct {
 
 type SubAccount struct {
 	Currency Currency
-	Amount,//available
-	ForzenAmount float64//forzen
+	Amount,  //available
+	ForzenAmount float64 //forzen
 }
 
 type Account struct {
@@ -43,6 +43,16 @@ type Ticker struct {
 	High float64 `json:"high"`
 	Low  float64 `json:"low"`
 	Vol  float64 `json:"vol"`
+	Date uint64  `json:"date"`
+}
+
+type Tickers struct {
+	//Last float64 `json:"last"`
+	Buy  float64 `json:"buy"`
+	BuyQty  float64 `json:"buyqty"`
+	Sell float64 `json:"sell"`
+	SellQty float64 `json:"sellqty"`
+	Currency string `json:currency`
 	Date uint64  `json:"date"`
 }
 

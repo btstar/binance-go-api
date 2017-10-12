@@ -6,6 +6,7 @@ golang wrapper for binance-api
 | API function | REST API | Websocket API | Description |
 |----------|------|-----------|-----|
 | GetTicker | Yes  | No        | Getting latest price of a symbol  |
+| GetTickers | Yes  | No        | Getting best price/qty on the order book for all symbols  |
 | GetDepth | Yes  | No        | Getting depth of a symbol or maintain a depth cache locally  |
 | LimitBuy | Yes  | No        | Placing a LIMIT buy order  |
 | LimitSell | Yes  | No        | Placing a LIMIT sell order  |
