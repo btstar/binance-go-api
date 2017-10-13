@@ -72,7 +72,7 @@ func (bn *Binance) GetTicker(currency CurrencyPair) (*Ticker, error) {
 	return &ticker, nil
 }
 
-func (bn *Binance) GetTickers() (*[]Tickers, error) {
+func (bn *Binance) GetTickers() ([]Tickers, error) {
 	tickerUri := API_V1 + TICKERS_URI
 	bodyDataMap, err := HttpGet3(bn.httpClient, tickerUri, nil)
 
@@ -94,7 +94,7 @@ func (bn *Binance) GetTickers() (*[]Tickers, error) {
 		ticker.Currency = tickerMap["symbol"].(string)
 		tickers = append(tickers, *ticker)
 	}
-	return &tickers, nil
+	return tickers, nil
 }
 
 func (bn *Binance) GetDepth(size int, currencyPair CurrencyPair) (*Depth, error) {
