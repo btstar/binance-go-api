@@ -1,7 +1,7 @@
-### Binance-api
-golang wrapper for binance-api
+# Golang Binance API
+golang wrapper for latest [Binance API](https://www.binance.com/restapipub.html)
 
-### Support latest api
+## Support latest api
 
 | API function | REST API | Websocket API | Description |
 |----------|------|-----------|-----|
@@ -17,7 +17,7 @@ golang wrapper for binance-api
 | GetUnfinishOrders | Yes | No       | Getting list of open orders  |
 | GetAccount | Yes | No | Getting list of current position |
 
-### Pre-condition
+## Pre-condition
 
 + [Install golang](https://golang.org/doc/install)
 + Install binance-api library, 
@@ -25,7 +25,7 @@ golang wrapper for binance-api
 go get github.com/BtStar/binance-api
 ```
 
-### Example
+## Example
 
 ```
 
