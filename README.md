@@ -22,7 +22,7 @@ golang wrapper for latest [Binance API](https://www.binance.com/restapipub.html)
 + [Install golang](https://golang.org/doc/install)
 + Install binance-api library, 
 ```
-go get github.com/BtStar/binance-api
+go get github.com/BtStar/binance-go-api
 ```
 
 ## Example
@@ -34,8 +34,8 @@ package main
 import (
     "log"
     "net/http"
-    "github.com/BtStar/binance-api"
-    "github.com/BtStar/binance-api/Utils"
+    "github.com/BtStar/binance-go-api"
+    "github.com/BtStar/binance-go-api/Utils"
 )
 
 func main() {
