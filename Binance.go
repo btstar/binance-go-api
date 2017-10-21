@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	. "github.com/BtStar/binance-api/Utils"
+	. "github.com/BtStar/binance-go-api/Utils"
 	"log"
 	"net/http"
 	"net/url"
