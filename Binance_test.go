@@ -1,7 +1,7 @@
 package binance
 
 import (
-	"github.com/BtStar/binance-api/Utils"
+	"github.com/BtStar/binance-go-api/Utils"
 	"net/http"
 	"testing"
 )
